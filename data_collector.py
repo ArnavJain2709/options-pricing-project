@@ -36,8 +36,13 @@ def fetch_options_data(ticker_symbol):
     for exp_date in stock.options:
         options_chain = stock.option_chain(exp_date)
         
+        calls = options_chain.calls
+        calls['optionType'] = 'call'
+        puts = options_chain.puts
+        puts['optionType'] = 'put'
+
         # Combine calls and puts
-        options_df = pd.concat([options_chain.calls, options_chain.puts])
+        options_df = pd.concat([calls, puts])
         
         # Add extra info
         options_df['expirationDate'] = exp_date
@@ -75,12 +80,16 @@ def process_and_clean_data(df):
     df = df[(df['bid'] > 0) & (df['ask'] > 0)]
 
     # Select the final columns needed for the model
+    # We now keep the extra columns needed for the Black-Scholes calculation
     final_cols = [
+        'underlyingPrice', # Keep this for S
+        'strike',          # Keep this for K
+        'optionType',      # Keep this for call/put
         'moneyness', 
         'timeToExpiration', 
         'impliedVolatility', 
         'riskFreeRate', 
-        'marketPrice' # This is our target variable 'y'
+        'marketPrice'       # Target variable y
     ]
     
     processed_df = df[final_cols].copy()
